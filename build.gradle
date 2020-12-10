@@ -1,83 +1,34 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 plugins {
-	id 'com.github.johnrengelman.shadow' version '5.0.0'
-	id 'java'
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
+group = 'io.github.Shevchik'
+version = '1.0.0'
 
-defaultTasks 'build'
-
-
-group 'io.github.Shevchik'
-version '7.0'
-
-
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.Files
-
-
-Path projectDirectoryPath = projectDir.toPath().toAbsolutePath()
-
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-
-sourceSets {
-	main {
-		java {
-			srcDirs = ['src']
-		}
-		resources {
-			srcDirs = ['resources']
-		}
-	}
-}
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 repositories {
-	mavenCentral()
-	jcenter()
-	maven {
-		url 'https://oss.sonatype.org/content/repositories/snapshots/'
-	}
-	maven {
-		url 'https://hub.spigotmc.org/nexus/content/repositories/public/'
-	}
-	maven {
-		url 'https://jitpack.io'
-	}
+    mavenCentral()
+    maven {
+        name = 'papermc-repo'
+        url = 'https://papermc.io/repo/repository/maven-public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
 }
 
 dependencies {
-	compileOnly group: 'org.spigotmc', name: 'spigot-api', version: '1.14-R0.1-SNAPSHOT'
+    compileOnly 'com.destroystokyo.paper:paper-api:1.16.4-R0.1-SNAPSHOT'
 }
 
-compileJava {
-	options.encoding = 'UTF-8'
-	options.incremental = false
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
 }
-
-
-shadowJar {
-	from sourceSets.main.java.srcDirs
-	from 'LICENSE'
-
-	archiveName = jar.archiveName
-
-	minimize()
-}
-
-
-task copyFinalJarToTarget(type: DefaultTask) {doLast{
-	Path targetJarDirectory = projectDirectoryPath.resolve("target")
-	Files.createDirectories(targetJarDirectory)
-	Files.copy(
-		shadowJar.archivePath.toPath().toAbsolutePath(),
-		targetJarDirectory.resolve(shadowJar.baseName + '.jar'),
-		java.nio.file.StandardCopyOption.REPLACE_EXISTING
-	)
-}}
-
-
-compileJava.dependsOn(clean)
-jar.enabled = false
-jar.finalizedBy(shadowJar)
-shadowJar.finalizedBy(copyFinalJarToTarget)
